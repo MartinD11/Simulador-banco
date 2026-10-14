@@ -14,7 +14,7 @@ public class CrearCuentaRequestDto {
     @Schema(description = "ID único del usuario dueño de la cuenta", example = "1045", requiredMode = Schema.RequiredMode.REQUIRED)
     private Long usuarioId;
 
-    @NotBlank(message = "El tipo de cuenta no puede estar vacío")
+    @NotNull(message = "El tipo de cuenta es obligatorio")
     @Schema(description = "El tipo de cuenta que se desea abrir (ej. CAJA_AHORRO, CUENTA_CORRIENTE)", example = "CAJA_AHORRO", requiredMode = Schema.RequiredMode.REQUIRED)
     private TipoCuenta tipoCuenta;
 }
