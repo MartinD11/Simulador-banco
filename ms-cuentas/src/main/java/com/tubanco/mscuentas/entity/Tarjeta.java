@@ -1,5 +1,6 @@
 package com.tubanco.mscuentas.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -31,5 +32,6 @@ public class Tarjeta {
 
     @OneToOne
     @JoinColumn(name = "cuenta_id", nullable = false)
+    @JsonIgnore
     private Cuenta cuenta;
 }

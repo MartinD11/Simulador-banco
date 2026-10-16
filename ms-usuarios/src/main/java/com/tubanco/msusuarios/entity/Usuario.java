@@ -34,7 +34,7 @@ public class Usuario {
     private String email;
 
     @Column(nullable = false)
-    private String password; // Preparada para Spring Security / JWT más adelante
+    private String password;
 
     @Column(nullable = false)
     private String telefono;
