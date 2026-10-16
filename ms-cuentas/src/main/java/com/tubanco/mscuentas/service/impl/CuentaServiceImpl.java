@@ -103,6 +103,15 @@ public class CuentaServiceImpl implements CuentaService {
         return respuesta;
     }
 
+    private String generarNumeroTarjeta() {
+        long numeroAleatorio = (long) (Math.random() * 1_000_000_000_000_000L);
+        return String.format("4%015d", numeroAleatorio);
+    }
+
+    private String generarCvv() {
+        int cvvAleatorio = (int) (Math.random() * 1000);
+        return String.format("%03d", cvvAleatorio);
+    }
 
 }
 

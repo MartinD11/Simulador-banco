@@ -36,5 +36,8 @@ public class Cuenta {
     @Column(nullable = false)
     private Long usuarioId;
 
+    @OneToOne(mappedBy = "cuenta", cascade = CascadeType.ALL)
+    private Tarjeta tarjeta;
+
 
 }
