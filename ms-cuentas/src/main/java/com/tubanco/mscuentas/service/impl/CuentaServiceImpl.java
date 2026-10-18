@@ -125,5 +125,22 @@ public class CuentaServiceImpl implements CuentaService {
         return String.format("%03d", cvvAleatorio);
     }
 
+    @Override
+    public void actualizarSaldo(Long id, BigDecimal monto) {
+        Cuenta cuenta = cuentaRepository.findById(id)
+                .orElseThrow(() -> new RecursoNoEncontradoException(
+                        "No se encontró la cuenta con id: " + id + ". No se puede actualizar el saldo de una cuenta que no existe."
+                ));
+
+        if(cuenta.getEstado() != Estado.ACTIVA) {
+            throw new IllegalStateException("No se puede actualizar el saldo de una cuenta inactiva.");
+        }
+
+        cuenta.setSaldo(cuenta.getSaldo().add(monto));
+        cuenta.setSaldo(monto);
+
+        cuentaRepository.save(cuenta);
+    }
 }
+
 
