@@ -2,10 +2,13 @@ package com.tubanco.mscuentas.service.impl;
 
 import com.tubanco.bancocommon.exceptions.RecursoNoEncontradoException;
 import com.tubanco.bancocommon.exceptions.TipoCuentaYaExisteException;
+import com.tubanco.mscuentas.client.UsuarioClient;
 import com.tubanco.mscuentas.dto.request.CrearCuentaRequestDto;
 import com.tubanco.mscuentas.dto.response.CuentaResponseDto;
+import com.tubanco.mscuentas.dto.response.UsuarioResponseDto;
 import com.tubanco.mscuentas.entity.Cuenta;
 import com.tubanco.mscuentas.enums.Estado;
+import com.tubanco.mscuentas.enums.EstadoUsuario;
 import com.tubanco.mscuentas.mapper.CuentaMapper;
 import com.tubanco.mscuentas.repository.CuentaRepository;
 import com.tubanco.mscuentas.service.CuentaService;
@@ -21,32 +24,41 @@ public class CuentaServiceImpl implements CuentaService {
 
     private final CuentaRepository cuentaRepository;
     private final CuentaMapper cuentaMapper;
+    private final UsuarioClient usuarioClient;
 
     @Override
     public CuentaResponseDto crearCuenta(CrearCuentaRequestDto requestDto) {
-        //primero valido si existe la cuenta para el usuario y el tipo de cuenta
-        //si existe lanzo una excepcion
-        //si no existe creo la cuenta y la guardo en la base de datos
-        boolean existeCuenta = cuentaRepository.existsByUsuarioIdAndTipoCuenta(requestDto.getUsuarioId(), requestDto.getTipoCuenta());
 
-        if(existeCuenta){
-            throw new TipoCuentaYaExisteException(
-                    "El usuario ya posee una cuenta del tipo " + requestDto.getTipoCuenta() + ". No se puede crear otra cuenta del mismo tipo para el mismo usuario."
+        UsuarioResponseDto usuario;
+        try {
+            usuario = usuarioClient.buscarUsuarioPorId(requestDto.getUsuarioId());
+        } catch (Exception e) {
+            throw new RecursoNoEncontradoException(
+                    "No se pudo encontrar el usuario con ID: " + requestDto.getUsuarioId() + " en el sistema de usuarios."
             );
         }
 
-        //mapeo el dto a entidad para guardarlo en la bases de datos
-        Cuenta nuevaCuenta = cuentaMapper.toEntity(requestDto);
+        if (usuario.getEstado() != EstadoUsuario.ACTIVO) {
+            throw new IllegalStateException("El usuario con ID " + requestDto.getUsuarioId() + " se encuentra inactivo. No se puede crear una cuenta.");
+        }
 
+        boolean existeCuenta = cuentaRepository.existsByUsuarioIdAndTipoCuenta(requestDto.getUsuarioId(), requestDto.getTipoCuenta());
+
+        if (existeCuenta) {
+            throw new TipoCuentaYaExisteException(
+                    "El usuario ya posee una cuenta del tipo " + requestDto.getTipoCuenta() + ". No se puede crear otra cuenta del mismo tipo."
+            );
+        }
+
+        // Mapear y guardar la nueva cuenta
+        Cuenta nuevaCuenta = cuentaMapper.toEntity(requestDto);
         nuevaCuenta.setSaldo(BigDecimal.ZERO);
         nuevaCuenta.setEstado(Estado.ACTIVA);
         nuevaCuenta.setCbu(generarCbuFalso());
 
-        //guardo en la base de datos
         Cuenta cuentaGuardada = cuentaRepository.save(nuevaCuenta);
 
         return cuentaMapper.toDto(cuentaGuardada);
-
     }
 
     private String generarCbuFalso() {
