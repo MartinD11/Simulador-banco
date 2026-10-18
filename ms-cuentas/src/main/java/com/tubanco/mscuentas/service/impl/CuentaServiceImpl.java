@@ -7,6 +7,7 @@ import com.tubanco.mscuentas.dto.request.CrearCuentaRequestDto;
 import com.tubanco.mscuentas.dto.response.CuentaResponseDto;
 import com.tubanco.mscuentas.dto.response.UsuarioResponseDto;
 import com.tubanco.mscuentas.entity.Cuenta;
+import com.tubanco.mscuentas.entity.Tarjeta;
 import com.tubanco.mscuentas.enums.Estado;
 import com.tubanco.mscuentas.enums.EstadoUsuario;
 import com.tubanco.mscuentas.mapper.CuentaMapper;
@@ -16,6 +17,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.List;
 
 @Service
@@ -55,6 +57,16 @@ public class CuentaServiceImpl implements CuentaService {
         nuevaCuenta.setSaldo(BigDecimal.ZERO);
         nuevaCuenta.setEstado(Estado.ACTIVA);
         nuevaCuenta.setCbu(generarCbuFalso());
+
+        //builder de tarjeta de credito
+        Tarjeta nuevaTarjeta = Tarjeta.builder()
+                .numeroTarjeta(generarNumeroTarjeta())
+                .cvv(generarCvv())
+                .fechaVencimiento(LocalDate.now().plusYears(5))
+                .cuenta(nuevaCuenta)
+                .build();
+
+        nuevaCuenta.setTarjeta(nuevaTarjeta);
 
         Cuenta cuentaGuardada = cuentaRepository.save(nuevaCuenta);
 
