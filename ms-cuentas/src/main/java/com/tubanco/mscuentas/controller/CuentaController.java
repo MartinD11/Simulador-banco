@@ -11,14 +11,12 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import jakarta.validation.Valid;
 
 import java.net.URI;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/cuentas")
@@ -46,4 +44,41 @@ public class CuentaController {
 
         return ResponseEntity.created(location).body(response);
     }
+
+    @Operation(summary = "Eliminar una cuenta", description = "Da de baja una cuenta existente.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Cuenta eliminada exitosamente"),
+            @ApiResponse(responseCode = "404", description = "Cuenta no encontrada", content = @Content),
+            @ApiResponse(responseCode = "500", description = "Error interno del servidor", content = @Content)
+    })
+    @DeleteMapping("/{id}")
+    public ResponseEntity<String> eliminarCuenta(@PathVariable Long id){
+        cuentaService.eliminarCuenta(id);
+        return ResponseEntity.ok("La cuenta ha sido dada de baja correctamente.");
+    }
+
+    @Operation(summary = "Obtener una cuenta por ID", description = "Recupera los detalles de una cuenta específica utilizando su ID.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Cuenta encontrada y retornada exitosamente"),
+            @ApiResponse(responseCode = "404", description = "Cuenta no encontrada", content = @Content),
+            @ApiResponse(responseCode = "500", description = "Error interno del servidor", content = @Content)
+    })
+    @GetMapping("/{id}")
+    public ResponseEntity<CuentaResponseDto> obtenerCuenta(@PathVariable Long id){
+        CuentaResponseDto response = cuentaService.obtenerCuenta(id);
+        return ResponseEntity.ok(response);
+    }
+
+    @Operation(summary = "Obtener cuentas por usuario", description = "Recupera todas las cuentas asociadas a un usuario específico.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Cuentas encontradas y retornadas exitosamente"),
+            @ApiResponse(responseCode = "404", description = "Usuario no encontrado", content = @Content),
+            @ApiResponse(responseCode = "500", description = "Error interno del servidor", content = @Content)
+    })
+    @GetMapping("/usuario/{id}")
+    public ResponseEntity<List<CuentaResponseDto>> obtenerCuentasPorUsuario(@PathVariable Long id){
+        List<CuentaResponseDto> response = cuentaService.obtenerCuentasPorUsuario(id);
+        return ResponseEntity.ok(response);
+    }
+
 }

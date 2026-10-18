@@ -1,5 +1,6 @@
 package com.tubanco.mscuentas.entity;
 
+import com.tubanco.mscuentas.enums.Estado;
 import com.tubanco.mscuentas.enums.TipoCuenta;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -27,6 +28,10 @@ public class Cuenta {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private TipoCuenta tipoCuenta;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false,name = "estado")
+    private Estado estado;
 
     @Column(nullable = false)
     private Long usuarioId;
