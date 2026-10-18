@@ -1,6 +1,7 @@
 package com.tubanco.msusuarios.entity;
 
 import com.tubanco.msusuarios.enums.Estado;
+import com.tubanco.msusuarios.enums.Rol;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -41,4 +42,8 @@ public class Usuario {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private Estado estado = Estado.ACTIVO;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private Rol rol = Rol.ROLE_USER;
 }
