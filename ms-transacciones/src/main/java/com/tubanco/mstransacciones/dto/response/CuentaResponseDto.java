@@ -17,4 +17,5 @@ public class CuentaResponseDto {
     private String cbu;
     private BigDecimal saldo;
     private EstadoCuenta estado;
+    private String titular;
 }

@@ -39,5 +39,8 @@ public class Cuenta {
     @OneToOne(mappedBy = "cuenta", cascade = CascadeType.ALL)
     private Tarjeta tarjeta;
 
+    @Column(nullable = false)
+    private String titular; // Ej: "Juan Pérez" o "Empresa S.A."
+
 
 }

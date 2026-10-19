@@ -24,10 +24,12 @@ public class Transaccion {
     private Long id;
 
     // Puede ser null si es un depósito desde el exterior
+    @Column(name = "cuenta_origen_id")
     private Long cuentaOrigenId;
 
     // Puede ser null si es una extracción por cajero
-    private Long cuentaDestino;
+    @Column(name = "cuenta_destino_id")
+    private Long cuentaDestinoId;
 
     @Column(nullable = false)
     private BigDecimal monto;
@@ -42,4 +44,16 @@ public class Transaccion {
 
     @Column(nullable = false)
     private LocalDateTime fechaTransaccion;
+
+    @Column(name = "cbu_origen")
+    private String cbuOrigen;
+
+    @Column(name = "titular_origen")
+    private String titularOrigen;
+
+    @Column(name = "cbu_destino")
+    private String cbuDestino;
+
+    @Column(name = "titular_destino")
+    private String titularDestino;
 }
