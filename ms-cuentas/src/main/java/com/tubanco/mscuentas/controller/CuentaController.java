@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import jakarta.validation.Valid;
 
+import java.math.BigDecimal;
 import java.net.URI;
 import java.util.List;
 
@@ -79,6 +80,12 @@ public class CuentaController {
     public ResponseEntity<List<CuentaResponseDto>> obtenerCuentasPorUsuario(@PathVariable Long id){
         List<CuentaResponseDto> response = cuentaService.obtenerCuentasPorUsuario(id);
         return ResponseEntity.ok(response);
+    }
+
+    @PutMapping("/{id}/actualizar-saldo")
+    public ResponseEntity<Void> actualizarSaldo(@PathVariable Long id, @RequestParam BigDecimal monto) {
+        cuentaService.actualizarSaldo(id, monto);
+        return ResponseEntity.ok().build();
     }
 
 }

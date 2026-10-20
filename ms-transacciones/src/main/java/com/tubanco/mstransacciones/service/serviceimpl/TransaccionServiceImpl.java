@@ -1,19 +1,86 @@
 package com.tubanco.mstransacciones.service.serviceimpl;
 
+import com.tubanco.bancocommon.exceptions.CuentaInactivaException;
+import com.tubanco.bancocommon.exceptions.RecursoNoEncontradoException;
+import com.tubanco.bancocommon.exceptions.SaldoInsuficienteException;
+import com.tubanco.mstransacciones.client.CuentaClient;
+import com.tubanco.mstransacciones.dto.response.CuentaResponseDto;
+import com.tubanco.mstransacciones.entity.Transaccion;
+import com.tubanco.mstransacciones.enums.EstadoCuenta;
+import com.tubanco.mstransacciones.enums.EstadoTransaccion;
+import com.tubanco.mstransacciones.enums.TipoTransaccion;
 import com.tubanco.mstransacciones.repository.TransaccionRepository;
 import com.tubanco.mstransacciones.service.TransaccionService;
+import feign.FeignException;
+import lombok.Builder;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 
 @Service
 @RequiredArgsConstructor
 public class TransaccionServiceImpl implements TransaccionService {
     private final TransaccionRepository transaccionRepository;
+    private final CuentaClient cuentaClient;
 
     @Override
-    public void procesarTransaccion(Long cuentaId, Long tipoTransaccion, BigDecimal monto) {
+    @Transactional
+    public Long procesarTransaccion(Long cuentaId, BigDecimal monto,Long destinoId) {
+        //primera validacion: verificar que el saldo sea un monto lopgico
+        if(monto.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new IllegalArgumentException("Monto negativo no puede ser menor que zero");
+        }
 
+        CuentaResponseDto cuentaOrigen;
+        try {
+            cuentaOrigen = cuentaClient.obtenerCuentaPorId(cuentaId);
+        } catch (FeignException.NotFound e) {
+            throw new RecursoNoEncontradoException("Cuenta origen no encontrada con id: " + cuentaId);
+        }
+
+        if(cuentaOrigen.getEstado() != EstadoCuenta.ACTIVA) {
+            throw new CuentaInactivaException("La cuenta origen no se encuentra activa");
+        }
+
+        CuentaResponseDto cuentaDestino;
+        try {
+            cuentaDestino = cuentaClient.obtenerCuentaPorId(destinoId);
+        } catch (FeignException.NotFound e) {
+            throw new RecursoNoEncontradoException("Cuenta origen no encontrada con id: " + cuentaId);
+        }
+        if(cuentaDestino.getEstado() != EstadoCuenta.ACTIVA) {
+            throw new CuentaInactivaException("La cuenta origen no se encuentra activa");
+        }
+
+        if(cuentaOrigen.getSaldo().compareTo(monto) < 0) {
+            throw new SaldoInsuficienteException("Saldo insuficiente en la cuenta origen");
+        }
+
+
+        Transaccion transaccion = Transaccion.builder()
+                .cuentaOrigenId(cuentaId)
+                .cbuOrigen(cuentaOrigen.getCbu())
+                .titularOrigen(cuentaOrigen.getTitular())
+                .cuentaDestinoId(destinoId)
+                .cbuDestino(cuentaDestino.getCbu())
+                .titularDestino(cuentaDestino.getTitular())
+                .monto(monto)
+                .tipo(TipoTransaccion.TRANSFERENCIA)
+                .estado(EstadoTransaccion.PENDIENTE)
+                .fechaTransaccion(LocalDateTime.now())
+                .build();
+
+        transaccionRepository.save(transaccion);
+
+        cuentaClient.actualizarSaldo(cuentaId, monto.negate());
+        cuentaClient.actualizarSaldo(destinoId, monto);
+
+        transaccion.setEstado(EstadoTransaccion.COMPLETADA);
+        Transaccion guardada = transaccionRepository.save(transaccion);
+
+        return guardada.getId();
     }
 }
