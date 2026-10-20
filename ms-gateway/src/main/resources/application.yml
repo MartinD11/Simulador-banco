@@ -11,20 +11,37 @@ spring:
           enabled: true
           lower-case-service-id: true
       routes:
+        # Rutas PÚBLICAS (No llevan filtro, acceso libre)
+        - id: ms-usuarios-auth
+          uri: lb://MS-USUARIOS
+          predicates:
+            - Path=/api/auth/**
+
+        # Rutas de gestión interna de usuarios
         - id: ms-usuarios
           uri: lb://MS-USUARIOS
           predicates:
             - Path=/api/usuarios/**
 
+        # Rutas PROTEGIDAS (Llevan el AuthFilter para exigir token)
         - id: ms-cuentas
           uri: lb://MS-CUENTAS
           predicates:
             - Path=/api/cuentas/**
+          filters:
+            - AuthFilter
 
         - id: ms-transacciones
           uri: lb://MS-TRANSACCIONES
           predicates:
             - Path=/api/transacciones/**
+          filters:
+            - AuthFilter
+
+# Configuración de JWT leyendo variable de entorno
+jwt:
+  secret: ${JWT_SECRET_KEY}
+  expiration: ${JWT_EXPIRATION_TIME:86400000}
 
 eureka:
   client:

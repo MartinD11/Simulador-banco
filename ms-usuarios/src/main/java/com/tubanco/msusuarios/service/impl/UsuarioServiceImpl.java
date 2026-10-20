@@ -27,7 +27,7 @@ public class UsuarioServiceImpl implements UsuarioService {
     @Transactional
     public UsuarioResponseDto crearUsuario(UsuarioRequestDto usuario) {
         if(usuarioRepository.findByDni(usuario.getDni()).isPresent()) {
-            throw new RecursoNoEncontradoException("El usuario con DNI " + usuario.getDni() + " ya existe.");
+            throw new IllegalArgumentException("El usuario con DNI " + usuario.getDni() + " ya existe.");
         }
 
         Usuario usuarioEntity = usuarioMapper.toEntity(usuario);
