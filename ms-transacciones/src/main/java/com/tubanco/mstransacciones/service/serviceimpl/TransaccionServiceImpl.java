@@ -5,10 +5,12 @@ import com.tubanco.bancocommon.exceptions.RecursoNoEncontradoException;
 import com.tubanco.bancocommon.exceptions.SaldoInsuficienteException;
 import com.tubanco.mstransacciones.client.CuentaClient;
 import com.tubanco.mstransacciones.dto.response.CuentaResponseDto;
+import com.tubanco.mstransacciones.dto.response.TransaccionResponseDto;
 import com.tubanco.mstransacciones.entity.Transaccion;
 import com.tubanco.mstransacciones.enums.EstadoCuenta;
 import com.tubanco.mstransacciones.enums.EstadoTransaccion;
 import com.tubanco.mstransacciones.enums.TipoTransaccion;
+import com.tubanco.mstransacciones.mapper.TransaccionMapper;
 import com.tubanco.mstransacciones.repository.TransaccionRepository;
 import com.tubanco.mstransacciones.service.TransaccionService;
 import feign.FeignException;
@@ -19,12 +21,15 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
 public class TransaccionServiceImpl implements TransaccionService {
     private final TransaccionRepository transaccionRepository;
     private final CuentaClient cuentaClient;
+    private final TransaccionMapper transaccionMapper;
 
     @Override
     @Transactional
@@ -82,5 +87,25 @@ public class TransaccionServiceImpl implements TransaccionService {
         Transaccion guardada = transaccionRepository.save(transaccion);
 
         return guardada.getId();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public TransaccionResponseDto obtenerPorId(Long id) {
+        Transaccion transaccion = transaccionRepository.findById(id)
+                .orElseThrow(()-> new RecursoNoEncontradoException("Transaccion no encontrada con id: " + id));
+
+        return transaccionMapper.toDto(transaccion);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<TransaccionResponseDto> obtenerHistorialPorCuenta(Long cuentaId) {
+        List<TransaccionResponseDto> transacciones = transaccionRepository.findByCuentaOrigenIdOrCuentaDestinoIdOrderByFechaTransaccionDesc(cuentaId, cuentaId)
+                .stream()
+                .map(transaccionMapper::toDto)
+                .toList();
+
+        return transacciones;
     }
 }
