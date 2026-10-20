@@ -1,5 +1,6 @@
 package com.tubanco.mstransacciones.service;
 
+import com.tubanco.mstransacciones.dto.request.OperacionCuentaRequestDto;
 import com.tubanco.mstransacciones.dto.response.TransaccionResponseDto;
 
 import java.math.BigDecimal;
@@ -9,5 +10,7 @@ public interface TransaccionService {
     Long procesarTransaccion(Long cuentaId, BigDecimal monto,Long destinoId);
     TransaccionResponseDto obtenerPorId(Long id);
     List<TransaccionResponseDto> obtenerHistorialPorCuenta(Long cuentaId);
+    TransaccionResponseDto realizarDeposito(OperacionCuentaRequestDto dto);
+    TransaccionResponseDto realizarExtraccion(OperacionCuentaRequestDto dto);
 
 }

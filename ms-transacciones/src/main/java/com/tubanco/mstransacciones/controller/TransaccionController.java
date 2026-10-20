@@ -1,5 +1,6 @@
 package com.tubanco.mstransacciones.controller;
 
+import com.tubanco.mstransacciones.dto.request.OperacionCuentaRequestDto;
 import com.tubanco.mstransacciones.dto.request.TransferenciaRequestDto;
 import com.tubanco.mstransacciones.dto.response.TransaccionResponseDto;
 import com.tubanco.mstransacciones.entity.Transaccion;
@@ -46,5 +47,25 @@ public class TransaccionController {
     public ResponseEntity<List<TransaccionResponseDto>> obtenerHistorialPorCuenta(@PathVariable Long cuentaId) {
         List<TransaccionResponseDto> historial = transaccionService.obtenerHistorialPorCuenta(cuentaId);
         return ResponseEntity.ok(historial);
+    }
+
+    @PostMapping("/depositos")
+    public ResponseEntity<TransaccionResponseDto> realizarDeposito(@Valid @RequestBody OperacionCuentaRequestDto dto) {
+        TransaccionResponseDto respuesta = transaccionService.realizarDeposito(dto);
+        URI location = ServletUriComponentsBuilder.fromCurrentContextPath()
+                .path("/api/transacciones/{id}")
+                .buildAndExpand(respuesta.getId())
+                .toUri();
+        return ResponseEntity.created(location).body(respuesta);
+    }
+
+    @PostMapping("/extracciones")
+    public ResponseEntity<TransaccionResponseDto> realizarExtraccion(@Valid @RequestBody OperacionCuentaRequestDto dto) {
+        TransaccionResponseDto respuesta = transaccionService.realizarExtraccion(dto);
+        URI location = ServletUriComponentsBuilder.fromCurrentContextPath()
+                .path("/api/transacciones/{id}")
+                .buildAndExpand(respuesta.getId())
+                .toUri();
+        return ResponseEntity.created(location).body(respuesta);
     }
 }

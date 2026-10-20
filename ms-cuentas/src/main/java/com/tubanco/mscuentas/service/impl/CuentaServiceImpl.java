@@ -137,7 +137,6 @@ public class CuentaServiceImpl implements CuentaService {
         }
 
         cuenta.setSaldo(cuenta.getSaldo().add(monto));
-        cuenta.setSaldo(monto);
 
         cuentaRepository.save(cuenta);
     }

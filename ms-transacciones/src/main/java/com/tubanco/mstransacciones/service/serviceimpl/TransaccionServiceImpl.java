@@ -4,6 +4,7 @@ import com.tubanco.bancocommon.exceptions.CuentaInactivaException;
 import com.tubanco.bancocommon.exceptions.RecursoNoEncontradoException;
 import com.tubanco.bancocommon.exceptions.SaldoInsuficienteException;
 import com.tubanco.mstransacciones.client.CuentaClient;
+import com.tubanco.mstransacciones.dto.request.OperacionCuentaRequestDto;
 import com.tubanco.mstransacciones.dto.response.CuentaResponseDto;
 import com.tubanco.mstransacciones.dto.response.TransaccionResponseDto;
 import com.tubanco.mstransacciones.entity.Transaccion;
@@ -107,5 +108,68 @@ public class TransaccionServiceImpl implements TransaccionService {
                 .toList();
 
         return transacciones;
+    }
+
+    @Override
+    @Transactional
+    public TransaccionResponseDto realizarDeposito(OperacionCuentaRequestDto dto) {
+        CuentaResponseDto cuenta = obtenerCuentaYValidarActiva(dto.getCuentaId());
+
+        // 1. Impactar el saldo positivo en ms-cuentas
+        cuentaClient.actualizarSaldo(cuenta.getId(), dto.getMonto());
+
+        // 2. Registrar comprobante de depósito
+        Transaccion transaccion = Transaccion.builder()
+                .cuentaDestinoId(cuenta.getId())
+                .cbuDestino(cuenta.getCbu())
+                .titularDestino(cuenta.getTitular())
+                .monto(dto.getMonto())
+                .tipo(TipoTransaccion.DEPOSITO)
+                .estado(EstadoTransaccion.COMPLETADA)
+                .fechaTransaccion(LocalDateTime.now())
+                .build();
+
+        Transaccion guardada = transaccionRepository.save(transaccion);
+        return transaccionMapper.toDto(guardada);
+    }
+
+    @Override
+    @Transactional
+    public TransaccionResponseDto realizarExtraccion(OperacionCuentaRequestDto dto) {
+        CuentaResponseDto cuenta = obtenerCuentaYValidarActiva(dto.getCuentaId());
+
+        if (cuenta.getSaldo().compareTo(dto.getMonto()) < 0) {
+            throw new SaldoInsuficienteException("Saldo insuficiente para realizar la extracción");
+        }
+
+        cuentaClient.actualizarSaldo(cuenta.getId(), dto.getMonto().negate());
+
+        Transaccion transaccion = Transaccion.builder()
+                .cuentaOrigenId(cuenta.getId())
+                .cbuOrigen(cuenta.getCbu())
+                .titularOrigen(cuenta.getTitular())
+                .monto(dto.getMonto())
+                .tipo(TipoTransaccion.EXTRACCION)
+                .estado(EstadoTransaccion.COMPLETADA)
+                .fechaTransaccion(LocalDateTime.now())
+                .build();
+
+        Transaccion guardada = transaccionRepository.save(transaccion);
+        return transaccionMapper.toDto(guardada);
+    }
+
+    private CuentaResponseDto obtenerCuentaYValidarActiva(Long cuentaId) {
+        CuentaResponseDto cuenta;
+        try {
+            cuenta = cuentaClient.obtenerCuentaPorId(cuentaId);
+        } catch (FeignException.NotFound e) {
+            throw new RecursoNoEncontradoException("Cuenta no encontrada con id: " + cuentaId);
+        }
+
+        if (cuenta.getEstado() != EstadoCuenta.ACTIVA) {
+            throw new CuentaInactivaException("La cuenta no se encuentra activa");
+        }
+
+        return cuenta;
     }
 }
