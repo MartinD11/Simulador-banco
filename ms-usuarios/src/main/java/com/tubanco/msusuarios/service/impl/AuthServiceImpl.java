@@ -44,6 +44,6 @@ public class AuthServiceImpl implements AuthService {
         }
 
         // 3. Si es correcto, fabricamos y devolvemos el token
-        return jwtProvider.generarToken(usuario.getEmail(), usuario.getId());
+        return jwtProvider.generarToken(usuario.getEmail(), usuario.getId(),usuario.getRol().name());
     }
 }
