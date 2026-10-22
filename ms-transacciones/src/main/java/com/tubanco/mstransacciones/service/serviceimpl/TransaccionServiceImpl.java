@@ -4,6 +4,7 @@ import com.tubanco.bancocommon.exceptions.CuentaInactivaException;
 import com.tubanco.bancocommon.exceptions.RecursoNoEncontradoException;
 import com.tubanco.bancocommon.exceptions.SaldoInsuficienteException;
 import com.tubanco.mstransacciones.client.CuentaClient;
+import com.tubanco.mstransacciones.config.RabbitMQConfig;
 import com.tubanco.mstransacciones.context.ContextoUsuario;
 import com.tubanco.mstransacciones.dto.request.OperacionCuentaRequestDto;
 import com.tubanco.mstransacciones.dto.response.CuentaResponseDto;
@@ -19,7 +20,7 @@ import feign.FeignException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -31,6 +32,7 @@ public class TransaccionServiceImpl implements TransaccionService {
     private final CuentaClient cuentaClient;
     private final TransaccionMapper transaccionMapper;
     private final ContextoUsuario contextUsuario;
+    private final RabbitTemplate rabbitTemplate;
 
     @Override
     @Transactional
@@ -39,11 +41,10 @@ public class TransaccionServiceImpl implements TransaccionService {
             throw new IllegalArgumentException("El monto no puede ser menor o igual a cero");
         }
 
-        // validamos la seguridad de la cuenta de origen
+        // Validaciones de lectura (mantenemos Feign solo para consultar estado y saldo actual)
         CuentaResponseDto cuentaOrigen = obtenerCuentaYValidarActiva(cuentaId);
         validarPropiedadOAdmin(cuentaOrigen);
 
-        //  Obtenemos cuenta destino (no validamos propiedad porque cualquiera puede recibir plata)
         CuentaResponseDto cuentaDestino = obtenerCuentaYValidarActiva(destinoId);
 
         if(cuentaOrigen.getSaldo().compareTo(monto) < 0) {
@@ -65,11 +66,19 @@ public class TransaccionServiceImpl implements TransaccionService {
 
         transaccionRepository.save(transaccion);
 
-        cuentaClient.actualizarSaldo(cuentaId, monto.negate());
-        cuentaClient.actualizarSaldo(destinoId, monto);
+        // ❌ ELIMINADO: cuentaClient.actualizarSaldo(...)
+        // Ya no llamamos de forma síncrona a cuentas. El evento asíncrono se encargará.
 
         transaccion.setEstado(EstadoTransaccion.COMPLETADA);
         Transaccion guardada = transaccionRepository.save(transaccion);
+
+        // 🚀 Despachamos el evento a RabbitMQ para que ms-cuentas procese los saldos asíncronamente
+        TransaccionResponseDto dtoRespuesta = transaccionMapper.toDto(guardada);
+        rabbitTemplate.convertAndSend(
+                RabbitMQConfig.EXCHANGE_TRANSACCIONES,
+                RabbitMQConfig.ROUTING_KEY_TRANSACCIONES,
+                dtoRespuesta
+        );
 
         return guardada.getId();
     }
@@ -80,7 +89,6 @@ public class TransaccionServiceImpl implements TransaccionService {
         Transaccion transaccion = transaccionRepository.findById(id)
                 .orElseThrow(()-> new RecursoNoEncontradoException("Transaccion no encontrada con id: " + id));
 
-        // Para ver el comprobante, validamos que el usuario sea el dueño de la cuenta origen o destino (o ADMIN)
         if (!contextUsuario.isAdmin()) {
             Long usuarioActualId = contextUsuario.getUsuarioId();
             CuentaResponseDto cuentaOrigen = cuentaClient.obtenerCuentaPorId(transaccion.getCuentaOrigenId());
@@ -103,7 +111,6 @@ public class TransaccionServiceImpl implements TransaccionService {
     @Override
     @Transactional(readOnly = true)
     public List<TransaccionResponseDto> obtenerHistorialPorCuenta(Long cuentaId) {
-        // Validamos que la persona que pide el historial sea el dueño de la cuenta
         CuentaResponseDto cuenta = obtenerCuentaYValidarActiva(cuentaId);
         validarPropiedadOAdmin(cuenta);
 
@@ -117,12 +124,9 @@ public class TransaccionServiceImpl implements TransaccionService {
     @Transactional
     public TransaccionResponseDto realizarDeposito(OperacionCuentaRequestDto dto) {
         CuentaResponseDto cuenta = obtenerCuentaYValidarActiva(dto.getCuentaId());
-
-        // Dependiendo del negocio, quizás un tercero puede depositarte,
-        // pero por seguridad bloqueamos para que solo el dueño o un cajero (admin) deposite.
         validarPropiedadOAdmin(cuenta);
 
-        cuentaClient.actualizarSaldo(cuenta.getId(), dto.getMonto());
+        // ❌ ELIMINADO: Llamada síncrona a cuentaClient.actualizarSaldo
 
         Transaccion transaccion = Transaccion.builder()
                 .cuentaDestinoId(cuenta.getId())
@@ -135,7 +139,16 @@ public class TransaccionServiceImpl implements TransaccionService {
                 .build();
 
         Transaccion guardada = transaccionRepository.save(transaccion);
-        return transaccionMapper.toDto(guardada);
+
+        // 🚀 Notificamos el depósito de forma asíncrona
+        TransaccionResponseDto dtoRespuesta = transaccionMapper.toDto(guardada);
+        rabbitTemplate.convertAndSend(
+                RabbitMQConfig.EXCHANGE_TRANSACCIONES,
+                RabbitMQConfig.ROUTING_KEY_TRANSACCIONES,
+                dtoRespuesta
+        );
+
+        return dtoRespuesta;
     }
 
     @Override
@@ -148,7 +161,7 @@ public class TransaccionServiceImpl implements TransaccionService {
             throw new SaldoInsuficienteException("Saldo insuficiente para realizar la extracción");
         }
 
-        cuentaClient.actualizarSaldo(cuenta.getId(), dto.getMonto().negate());
+        // ❌ ELIMINADO: Llamada síncrona a cuentaClient.actualizarSaldo
 
         Transaccion transaccion = Transaccion.builder()
                 .cuentaOrigenId(cuenta.getId())
@@ -161,10 +174,17 @@ public class TransaccionServiceImpl implements TransaccionService {
                 .build();
 
         Transaccion guardada = transaccionRepository.save(transaccion);
-        return transaccionMapper.toDto(guardada);
+
+        // 🚀 Notificamos la extracción de forma asíncrona
+        TransaccionResponseDto dtoRespuesta = transaccionMapper.toDto(guardada);
+        rabbitTemplate.convertAndSend(
+                RabbitMQConfig.EXCHANGE_TRANSACCIONES,
+                RabbitMQConfig.ROUTING_KEY_TRANSACCIONES,
+                dtoRespuesta
+        );
+
+        return dtoRespuesta;
     }
-
-
 
     private CuentaResponseDto obtenerCuentaYValidarActiva(Long cuentaId) {
         CuentaResponseDto cuenta;
@@ -181,13 +201,13 @@ public class TransaccionServiceImpl implements TransaccionService {
         return cuenta;
     }
 
-    private void validarPropiedadOAdmin(CuentaResponseDto cuenta) {
+    private void validarPropiedadOAdmin(CuentaResponseDto cuentaClientDto) {
         if (contextUsuario.isAdmin()) {
             return;
         }
 
         Long usuarioActualId = contextUsuario.getUsuarioId();
-        if (usuarioActualId == null || !usuarioActualId.equals(cuenta.getUsuarioId())) {
+        if (usuarioActualId == null || !usuarioActualId.equals(cuentaClientDto.getUsuarioId())) {
             throw new RuntimeException("Acceso Denegado: No tenés permisos sobre esta cuenta.");
         }
     }

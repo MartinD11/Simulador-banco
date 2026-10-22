@@ -20,5 +20,12 @@ services:
     ports:
       - "6379:6379"
     restart: always
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: rabbitmq-banco
+    ports:
+      - "5672:5672"   # Puerto interno por donde se comunican los microservicios Java
+      - "15672:15672" # Puerto web para que vos entres a ver la interfaz gráfica
+    restart: always
 volumes:
   pg_data:
