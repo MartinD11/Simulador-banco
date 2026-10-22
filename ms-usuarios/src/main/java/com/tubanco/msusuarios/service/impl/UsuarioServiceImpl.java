@@ -16,7 +16,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -28,7 +27,7 @@ public class UsuarioServiceImpl implements UsuarioService {
 
     @Override
     @Transactional
-    @CacheEvict(value = "usuarios", key = "'todos'") // Borra la caché de la lista
+    @CacheEvict(value = "usuarios", allEntries = true) // Purga la caché completa para evitar datos fantasmas
     public UsuarioResponseDto crearUsuario(UsuarioRequestDto usuario) {
         if(usuarioRepository.findByDni(usuario.getDni()).isPresent()) {
             throw new IllegalArgumentException("El usuario con DNI " + usuario.getDni() + " ya existe.");
@@ -77,6 +76,7 @@ public class UsuarioServiceImpl implements UsuarioService {
 
     @Override
     @Transactional
+    @CacheEvict(value = "usuarios", key = "#id") // Borra únicamente el registro modificado
     public UsuarioResponseDto actualizarUsuario(Long id, UsuarioRequestDto usuario) {
         validarPropiedadOAdmin(id);
 
@@ -93,6 +93,7 @@ public class UsuarioServiceImpl implements UsuarioService {
 
     @Override
     @Transactional
+    @CacheEvict(value = "usuarios", allEntries = true) // Borra todo para mantener la lista global sincronizada
     public void eliminarUsuario(Long id) {
         validarPropiedadOAdmin(id);
 
