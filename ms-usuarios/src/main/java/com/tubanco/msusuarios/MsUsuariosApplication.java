@@ -2,9 +2,10 @@ package com.tubanco.msusuarios;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.cache.annotation.EnableCaching;
 
 import java.util.TimeZone;
-
+@EnableCaching
 @SpringBootApplication(scanBasePackages = {"com.tubanco.msusuarios", "com.tubanco.bancocommon"})
 public class MsUsuariosApplication {
 

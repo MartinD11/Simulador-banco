@@ -4,8 +4,10 @@ import com.tubanco.msusuarios.enums.Estado;
 import com.tubanco.msusuarios.enums.Rol;
 import lombok.Data;
 
+import java.io.Serializable;
+
 @Data
-public class UsuarioResponseDto {
+public class UsuarioResponseDto implements Serializable {
 
     private Long id;
     private String nombre;

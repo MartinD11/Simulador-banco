@@ -10,6 +10,8 @@ import com.tubanco.msusuarios.mapper.UsuarioMapper;
 import com.tubanco.msusuarios.repository.UsuarioRepository;
 import com.tubanco.msusuarios.service.UsuarioService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,6 +28,7 @@ public class UsuarioServiceImpl implements UsuarioService {
 
     @Override
     @Transactional
+    @CacheEvict(value = "usuarios", key = "'todos'") // Borra la caché de la lista
     public UsuarioResponseDto crearUsuario(UsuarioRequestDto usuario) {
         if(usuarioRepository.findByDni(usuario.getDni()).isPresent()) {
             throw new IllegalArgumentException("El usuario con DNI " + usuario.getDni() + " ya existe.");
@@ -39,6 +42,7 @@ public class UsuarioServiceImpl implements UsuarioService {
 
     @Override
     @Transactional(readOnly = true)
+    @Cacheable(value = "usuarios", key = "'todos'")
     public List<UsuarioResponseDto> findAll() {
         validarSoloAdmin();
 
@@ -50,6 +54,7 @@ public class UsuarioServiceImpl implements UsuarioService {
 
     @Override
     @Transactional(readOnly = true)
+    @Cacheable(value = "usuarios", key = "#id")
     public UsuarioResponseDto findById(Long id) {
         validarPropiedadOAdmin(id);
 
