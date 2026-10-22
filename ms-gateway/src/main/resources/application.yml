@@ -10,20 +10,33 @@ spring:
         locator:
           enabled: true
           lower-case-service-id: true
+
+      default-filters:
+        - RemoveRequestHeader=X-Llamada-Interna
+
       routes:
-        # Rutas PÚBLICAS (No llevan filtro, acceso libre)
+        # 1. Rutas PÚBLICAS (Login y Autenticación)
         - id: ms-usuarios-auth
           uri: lb://MS-USUARIOS
           predicates:
             - Path=/api/auth/**
 
-        # Rutas de gestión interna de usuarios
-        - id: ms-usuarios
+        # 2. Ruta PÚBLICA (Solo para Registrarse / POST)
+        - id: ms-usuarios-registro
+          uri: lb://MS-USUARIOS
+          predicates:
+            - Path=/api/usuarios
+            - Method=POST
+
+        # 3. Rutas PROTEGIDAS de Usuarios (Ver perfil, editar, eliminar)
+        - id: ms-usuarios-protegido
           uri: lb://MS-USUARIOS
           predicates:
             - Path=/api/usuarios/**
+          filters:
+            - AuthFilter
 
-        # Rutas PROTEGIDAS (Llevan el AuthFilter para exigir token)
+        # 4. Rutas PROTEGIDAS de Cuentas
         - id: ms-cuentas
           uri: lb://MS-CUENTAS
           predicates:
@@ -31,6 +44,7 @@ spring:
           filters:
             - AuthFilter
 
+        # 5. Rutas PROTEGIDAS de Transacciones
         - id: ms-transacciones
           uri: lb://MS-TRANSACCIONES
           predicates:
@@ -38,7 +52,7 @@ spring:
           filters:
             - AuthFilter
 
-# Configuración de JWT leyendo variable de entorno
+# Configuración de JWT
 jwt:
   secret: ${JWT_SECRET_KEY}
   expiration: ${JWT_EXPIRATION_TIME:86400000}

@@ -18,7 +18,4 @@ public class CrearCuentaRequestDto {
     @Schema(description = "El tipo de cuenta que se desea abrir (ej. CAJA_AHORRO, CUENTA_CORRIENTE)", example = "CAJA_AHORRO", requiredMode = Schema.RequiredMode.REQUIRED)
     private TipoCuenta tipoCuenta;
 
-    @NotBlank(message = "El nombre del titular es obligatorio")
-    @Schema(description = "Nombre completo o razón social del titular", example = "Juan Pérez", requiredMode = Schema.RequiredMode.REQUIRED)
-    private String titular;
 }

@@ -83,7 +83,14 @@ public class CuentaController {
     }
 
     @PutMapping("/{id}/actualizar-saldo")
-    public ResponseEntity<Void> actualizarSaldo(@PathVariable Long id, @RequestParam BigDecimal monto) {
+    public ResponseEntity<Void> actualizarSaldo(@PathVariable Long id, @RequestParam BigDecimal monto,
+                                                @RequestHeader(value = "X-Llamada-Interna", required = false) String llamadaInterna) {
+
+        if (!"true".equals(llamadaInterna)) {
+            // Si no tiene el sello (porque vino de afuera o de un lugar no autorizado), lo rebotamos
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+
         cuentaService.actualizarSaldo(id, monto);
         return ResponseEntity.ok().build();
     }

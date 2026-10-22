@@ -3,6 +3,7 @@ package com.tubanco.mscuentas.service.impl;
 import com.tubanco.bancocommon.exceptions.RecursoNoEncontradoException;
 import com.tubanco.bancocommon.exceptions.TipoCuentaYaExisteException;
 import com.tubanco.mscuentas.client.UsuarioClient;
+import com.tubanco.mscuentas.context.ContextoUsuario;
 import com.tubanco.mscuentas.dto.request.CrearCuentaRequestDto;
 import com.tubanco.mscuentas.dto.response.CuentaResponseDto;
 import com.tubanco.mscuentas.dto.response.UsuarioResponseDto;
@@ -27,17 +28,19 @@ public class CuentaServiceImpl implements CuentaService {
     private final CuentaRepository cuentaRepository;
     private final CuentaMapper cuentaMapper;
     private final UsuarioClient usuarioClient;
+    private final ContextoUsuario contextoUsuario;
 
     @Override
     public CuentaResponseDto crearCuenta(CrearCuentaRequestDto requestDto) {
+        validarPropiedadOAdmin(requestDto.getUsuarioId());
 
         UsuarioResponseDto usuario;
         try {
             usuario = usuarioClient.buscarUsuarioPorId(requestDto.getUsuarioId());
         } catch (Exception e) {
-            throw new RecursoNoEncontradoException(
-                    "No se pudo encontrar el usuario con ID: " + requestDto.getUsuarioId() + " en el sistema de usuarios."
-            );
+            System.err.println("================ ERROR REAL DE FEIGN ================");
+            e.printStackTrace();
+            throw new RuntimeException("Error real: " + e.getMessage(), e);
         }
 
         if (usuario.getEstado() != EstadoUsuario.ACTIVO) {
@@ -52,13 +55,12 @@ public class CuentaServiceImpl implements CuentaService {
             );
         }
 
-        // Mapear y guardar la nueva cuenta
         Cuenta nuevaCuenta = cuentaMapper.toEntity(requestDto);
+        nuevaCuenta.setTitular(usuario.getNombre() + " " + usuario.getApellido());
         nuevaCuenta.setSaldo(BigDecimal.ZERO);
         nuevaCuenta.setEstado(Estado.ACTIVA);
         nuevaCuenta.setCbu(generarCbuFalso());
 
-        //builder de tarjeta de credito
         Tarjeta nuevaTarjeta = Tarjeta.builder()
                 .numeroTarjeta(generarNumeroTarjeta())
                 .cvv(generarCvv())
@@ -74,22 +76,18 @@ public class CuentaServiceImpl implements CuentaService {
     }
 
     private String generarCbuFalso() {
-        // Un CBU bancario consta de exactamente 22 dígitos
-        // Prefijo de 8 dígitos + 14 dígitos aleatorios rellenos con ceros a la izquierda
         long numeroAleatorio = (long) (Math.random() * 100_000_000_000_000L);
-        return String.format("00000031%014d", numeroAleatorio); // 8 + 14 = 22 caracteres exactos
+        return String.format("00000031%014d", numeroAleatorio);
     }
 
     @Override
     public void eliminarCuenta(Long id){
-        //pasos:
-        //buscar por id si existe la cuenta, si no existe lanzo una excepcion
-        //si existe paso ele estado de la cuenta a inactivo
-        //guardo la actualizacion en la base de datos
         Cuenta cuenta = cuentaRepository.findById(id)
                 .orElseThrow(()-> new RecursoNoEncontradoException(
                         "No se encontró la cuenta con id: " + id + ". No se puede eliminar una cuenta que no existe."
                 ));
+
+        validarPropiedadOAdmin(cuenta.getUsuarioId());
 
         cuenta.setEstado(Estado.CERRADA);
 
@@ -102,11 +100,16 @@ public class CuentaServiceImpl implements CuentaService {
                 .orElseThrow(()-> new RecursoNoEncontradoException(
                         "No se encontró la cuenta con id: " + id + ". No se puede obtener una cuenta que no existe."
                 ));
+
+        validarPropiedadOAdmin(cuenta.getUsuarioId());
+
         return cuentaMapper.toDto(cuenta);
     }
 
     @Override
     public List<CuentaResponseDto> obtenerCuentasPorUsuario(Long usuarioId) {
+        validarPropiedadOAdmin(usuarioId);
+
         List<CuentaResponseDto> respuesta = cuentaRepository.findByUsuarioId(usuarioId)
                 .stream()
                 .map(cuentaMapper::toDto)
@@ -140,6 +143,15 @@ public class CuentaServiceImpl implements CuentaService {
 
         cuentaRepository.save(cuenta);
     }
+
+    private void validarPropiedadOAdmin(Long usuarioIdPropietario) {
+        if (contextoUsuario.isLlamadaInterna() || contextoUsuario.isAdmin()) {
+            return;
+        }
+
+        Long usuarioActualId = contextoUsuario.getUsuarioId();
+        if (usuarioActualId == null || !usuarioIdPropietario.equals(usuarioActualId)) {
+            throw new RuntimeException("Acceso Denegado: No tenés permisos sobre esta cuenta.");
+        }
+    }
 }
-
-

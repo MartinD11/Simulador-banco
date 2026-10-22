@@ -1,6 +1,7 @@
 package com.tubanco.msusuarios.service.impl;
 
 import com.tubanco.bancocommon.exceptions.RecursoNoEncontradoException;
+import com.tubanco.msusuarios.context.ContextoUsuario;
 import com.tubanco.msusuarios.dto.request.UsuarioRequestDto;
 import com.tubanco.msusuarios.dto.response.UsuarioResponseDto;
 import com.tubanco.msusuarios.entity.Usuario;
@@ -19,9 +20,9 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class UsuarioServiceImpl implements UsuarioService {
 
-     private final  UsuarioRepository usuarioRepository;
-     private final UsuarioMapper usuarioMapper;
-
+    private final UsuarioRepository usuarioRepository;
+    private final UsuarioMapper usuarioMapper;
+    private final ContextoUsuario contextoUsuario;
 
     @Override
     @Transactional
@@ -34,12 +35,13 @@ public class UsuarioServiceImpl implements UsuarioService {
         Usuario usuarioGuardado = usuarioRepository.save(usuarioEntity);
 
         return usuarioMapper.toResponseDto(usuarioGuardado);
-
     }
 
     @Override
     @Transactional(readOnly = true)
     public List<UsuarioResponseDto> findAll() {
+        validarSoloAdmin();
+
         return usuarioRepository.findAll()
                 .stream()
                 .map(usuarioMapper::toResponseDto)
@@ -49,11 +51,12 @@ public class UsuarioServiceImpl implements UsuarioService {
     @Override
     @Transactional(readOnly = true)
     public UsuarioResponseDto findById(Long id) {
+        validarPropiedadOAdmin(id);
+
         Usuario usuario = usuarioRepository.findById(id)
                 .orElseThrow(()-> new RecursoNoEncontradoException("El usuario con ID " + id + " no fue encontrado."));
 
         return usuarioMapper.toResponseDto(usuario);
-
     }
 
     @Override
@@ -62,32 +65,52 @@ public class UsuarioServiceImpl implements UsuarioService {
         Usuario usuario = usuarioRepository.findByDni(dni)
                 .orElseThrow(()-> new RecursoNoEncontradoException("El usuario con DNI " + dni + " no fue encontrado."));
 
+        validarPropiedadOAdmin(usuario.getId());
+
         return usuarioMapper.toResponseDto(usuario);
     }
 
     @Override
     @Transactional
     public UsuarioResponseDto actualizarUsuario(Long id, UsuarioRequestDto usuario) {
+        validarPropiedadOAdmin(id);
+
         Usuario usuarioExistente = usuarioRepository.findById(id)
                 .orElseThrow(() -> new RecursoNoEncontradoException("El usuario con ID " + id + " no fue encontrado."));
 
-        // Actualizar los campos del usuario existente con los valores del DTO
         usuarioExistente.setNombre(usuario.getNombre());
         usuarioExistente.setApellido(usuario.getApellido());
         usuarioExistente.setTelefono(usuario.getTelefono());
         usuarioExistente.setEmail(usuario.getEmail());
 
         return usuarioMapper.toResponseDto(usuarioRepository.save(usuarioExistente));
-
     }
 
     @Override
     @Transactional
     public void eliminarUsuario(Long id) {
+        validarPropiedadOAdmin(id);
+
         Usuario usuarioExistente = usuarioRepository.findById(id)
                 .orElseThrow(() -> new RecursoNoEncontradoException("El usuario con ID " + id + " no fue encontrado."));
 
         usuarioExistente.setEstado(Estado.INACTIVO);
         usuarioRepository.save(usuarioExistente);
+    }
+
+    private void validarPropiedadOAdmin(Long idPerfil) {
+        if (contextoUsuario.isLlamadaInterna() || contextoUsuario.isAdmin()) {
+            return;
+        }
+        Long usuarioActualId = contextoUsuario.getUsuarioId();
+        if (usuarioActualId == null || !idPerfil.equals(usuarioActualId)) {
+            throw new RuntimeException("Acceso Denegado: No tenés permisos sobre este perfil.");
+        }
+    }
+
+    private void validarSoloAdmin() {
+        if (!contextoUsuario.isAdmin()) {
+            throw new RuntimeException("Acceso Denegado: Operación exclusiva para administradores.");
+        }
     }
 }
