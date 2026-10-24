@@ -12,7 +12,7 @@ public class FeignInterceptorConfig implements RequestInterceptor {
 
     @Override
     public void apply(RequestTemplate template) {
-        // 1. Sello de llamada interna
+        //Sello de llamada interna
         template.header("X-Llamada-Interna", "true");
 
         ServletRequestAttributes attributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
@@ -23,7 +23,7 @@ public class FeignInterceptorConfig implements RequestInterceptor {
             String usuarioId = request.getHeader("X-Usuario-Id");
             String rol = request.getHeader("X-Usuario-Rol");
 
-            // 2. ¡LA CLAVE! Rescatamos el Token JWT de la petición original
+            // Rescatamos el Token JWT de la petición original
             String authorization = request.getHeader("Authorization");
 
             if (usuarioId != null) {
@@ -32,7 +32,7 @@ public class FeignInterceptorConfig implements RequestInterceptor {
             if (rol != null) {
                 template.header("X-Usuario-Rol", rol);
             }
-            // 3. Se lo inyectamos al Feign para que ms-usuarios lo deje pasar
+            //Se lo inyectamos al Feign para que ms-usuarios lo deje pasar
             if (authorization != null) {
                 template.header("Authorization", authorization);
             }

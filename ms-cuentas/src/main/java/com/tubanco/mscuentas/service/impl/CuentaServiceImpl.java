@@ -72,7 +72,9 @@ public class CuentaServiceImpl implements CuentaService {
 
         Cuenta cuentaGuardada = cuentaRepository.save(nuevaCuenta);
 
-        return cuentaMapper.toDto(cuentaGuardada);
+        CuentaResponseDto response = cuentaMapper.toDto(cuentaGuardada);
+        response.setEmail(usuario.getEmail());
+        return response;
     }
 
     private String generarCbuFalso() {
@@ -103,19 +105,42 @@ public class CuentaServiceImpl implements CuentaService {
 
         validarPropiedadOAdmin(cuenta.getUsuarioId());
 
-        return cuentaMapper.toDto(cuenta);
+        CuentaResponseDto response = cuentaMapper.toDto(cuenta);
+        try {
+            UsuarioResponseDto usuario = usuarioClient.buscarUsuarioPorId(cuenta.getUsuarioId());
+            if (usuario != null) {
+                response.setEmail(usuario.getEmail());
+            }
+        } catch (Exception e) {
+            // Si ms-usuarios no responde, devolvemos la cuenta igualmente
+        }
+
+        return response;
     }
 
     @Override
     public List<CuentaResponseDto> obtenerCuentasPorUsuario(Long usuarioId) {
         validarPropiedadOAdmin(usuarioId);
 
-        List<CuentaResponseDto> respuesta = cuentaRepository.findByUsuarioId(usuarioId)
-                .stream()
-                .map(cuentaMapper::toDto)
-                .toList();
+        String email = null;
+        try {
+            UsuarioResponseDto usuario = usuarioClient.buscarUsuarioPorId(usuarioId);
+            if (usuario != null) {
+                email = usuario.getEmail();
+            }
+        } catch (Exception e) {
+            // Manejo de excepción en caso de falla en ms-usuarios
+        }
 
-        return respuesta;
+        final String userEmail = email;
+        return cuentaRepository.findByUsuarioId(usuarioId)
+                .stream()
+                .map(cuenta -> {
+                    CuentaResponseDto dto = cuentaMapper.toDto(cuenta);
+                    dto.setEmail(userEmail);
+                    return dto;
+                })
+                .toList();
     }
 
     private String generarNumeroTarjeta() {

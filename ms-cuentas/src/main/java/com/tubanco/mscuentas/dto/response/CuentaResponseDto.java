@@ -21,4 +21,5 @@ public class CuentaResponseDto {
     private TarjetaResponseDto tarjeta;
     private String titular;
     private Estado estado;
+    private String email;
 }

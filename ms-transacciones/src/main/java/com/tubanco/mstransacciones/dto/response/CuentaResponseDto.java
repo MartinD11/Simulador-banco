@@ -19,4 +19,5 @@ public class CuentaResponseDto {
     private BigDecimal saldo;
     private EstadoCuenta estado;
     private String titular;
+    private String email;
 }

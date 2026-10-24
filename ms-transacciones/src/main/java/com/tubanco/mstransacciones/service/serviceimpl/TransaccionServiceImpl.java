@@ -74,6 +74,7 @@ public class TransaccionServiceImpl implements TransaccionService {
 
         // 🚀 Despachamos el evento a RabbitMQ para que ms-cuentas procese los saldos asíncronamente
         TransaccionResponseDto dtoRespuesta = transaccionMapper.toDto(guardada);
+        dtoRespuesta.setEmailCliente(cuentaOrigen.getEmail());
         rabbitTemplate.convertAndSend(
                 RabbitMQConfig.EXCHANGE_TRANSACCIONES,
                 RabbitMQConfig.ROUTING_KEY_TRANSACCIONES,
@@ -142,6 +143,7 @@ public class TransaccionServiceImpl implements TransaccionService {
 
         // 🚀 Notificamos el depósito de forma asíncrona
         TransaccionResponseDto dtoRespuesta = transaccionMapper.toDto(guardada);
+        dtoRespuesta.setEmailCliente(cuenta.getEmail());
         rabbitTemplate.convertAndSend(
                 RabbitMQConfig.EXCHANGE_TRANSACCIONES,
                 RabbitMQConfig.ROUTING_KEY_TRANSACCIONES,
@@ -177,6 +179,7 @@ public class TransaccionServiceImpl implements TransaccionService {
 
         // 🚀 Notificamos la extracción de forma asíncrona
         TransaccionResponseDto dtoRespuesta = transaccionMapper.toDto(guardada);
+        dtoRespuesta.setEmailCliente(cuenta.getEmail());
         rabbitTemplate.convertAndSend(
                 RabbitMQConfig.EXCHANGE_TRANSACCIONES,
                 RabbitMQConfig.ROUTING_KEY_TRANSACCIONES,

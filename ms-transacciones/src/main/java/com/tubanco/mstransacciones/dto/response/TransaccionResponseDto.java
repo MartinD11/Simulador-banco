@@ -26,4 +26,5 @@ public class TransaccionResponseDto {
     private TipoTransaccion tipo;
     private EstadoTransaccion estado;
     private LocalDateTime fechaTransaccion;
+    private String emailCliente;
 }

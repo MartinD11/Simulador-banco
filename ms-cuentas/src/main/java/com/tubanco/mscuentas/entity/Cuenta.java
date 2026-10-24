@@ -40,7 +40,7 @@ public class Cuenta {
     private Tarjeta tarjeta;
 
     @Column(nullable = false)
-    private String titular; // Ej: "Juan Pérez" o "Empresa S.A."
+    private String titular;
 
 
 }
