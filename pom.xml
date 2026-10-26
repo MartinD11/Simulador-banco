@@ -36,5 +36,9 @@
 		<module>banco-common</module>
 		<module>ms-cuentas</module>
 		<module>ms-usuarios</module>
+		<module>ms-transacciones</module>
+		<module>ms-gateway</module>
+		<module>ms-notificaciones</module>
 	</modules>
 </project>
+
