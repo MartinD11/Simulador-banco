@@ -66,13 +66,13 @@ public class TransaccionServiceImpl implements TransaccionService {
 
         transaccionRepository.save(transaccion);
 
-        // ❌ ELIMINADO: cuentaClient.actualizarSaldo(...)
+        //  ELIMINADO: cuentaClient.actualizarSaldo(...)
         // Ya no llamamos de forma síncrona a cuentas. El evento asíncrono se encargará.
 
         transaccion.setEstado(EstadoTransaccion.COMPLETADA);
         Transaccion guardada = transaccionRepository.save(transaccion);
 
-        // 🚀 Despachamos el evento a RabbitMQ para que ms-cuentas procese los saldos asíncronamente
+        // Despachamos el evento a RabbitMQ para que ms-cuentas procese los saldos asíncronamente
         TransaccionResponseDto dtoRespuesta = transaccionMapper.toDto(guardada);
         dtoRespuesta.setEmailCliente(cuentaOrigen.getEmail());
         rabbitTemplate.convertAndSend(
@@ -127,7 +127,6 @@ public class TransaccionServiceImpl implements TransaccionService {
         CuentaResponseDto cuenta = obtenerCuentaYValidarActiva(dto.getCuentaId());
         validarPropiedadOAdmin(cuenta);
 
-        // ❌ ELIMINADO: Llamada síncrona a cuentaClient.actualizarSaldo
 
         Transaccion transaccion = Transaccion.builder()
                 .cuentaDestinoId(cuenta.getId())
@@ -141,7 +140,6 @@ public class TransaccionServiceImpl implements TransaccionService {
 
         Transaccion guardada = transaccionRepository.save(transaccion);
 
-        // 🚀 Notificamos el depósito de forma asíncrona
         TransaccionResponseDto dtoRespuesta = transaccionMapper.toDto(guardada);
         dtoRespuesta.setEmailCliente(cuenta.getEmail());
         rabbitTemplate.convertAndSend(
@@ -163,7 +161,6 @@ public class TransaccionServiceImpl implements TransaccionService {
             throw new SaldoInsuficienteException("Saldo insuficiente para realizar la extracción");
         }
 
-        // ❌ ELIMINADO: Llamada síncrona a cuentaClient.actualizarSaldo
 
         Transaccion transaccion = Transaccion.builder()
                 .cuentaOrigenId(cuenta.getId())
@@ -177,7 +174,6 @@ public class TransaccionServiceImpl implements TransaccionService {
 
         Transaccion guardada = transaccionRepository.save(transaccion);
 
-        // 🚀 Notificamos la extracción de forma asíncrona
         TransaccionResponseDto dtoRespuesta = transaccionMapper.toDto(guardada);
         dtoRespuesta.setEmailCliente(cuenta.getEmail());
         rabbitTemplate.convertAndSend(

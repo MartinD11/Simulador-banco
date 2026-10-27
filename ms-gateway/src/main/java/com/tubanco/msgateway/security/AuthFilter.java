@@ -38,6 +38,7 @@ public class AuthFilter extends AbstractGatewayFilterFactory<AuthFilter.Config> 
                 //  Validamos la firma criptográfica
                 jwtUtil.validarToken(authHeader);
 
+
                 // Extraemos los datos (Claims) que guardamos en ms-usuarios
                 Claims claims = jwtUtil.extraerClaims(authHeader);
                 String usuarioId = claims.get("usuarioId").toString();
@@ -59,6 +60,11 @@ public class AuthFilter extends AbstractGatewayFilterFactory<AuthFilter.Config> 
 
             } catch (Exception e) {
                 // Si el token es falso o expiró
+
+                // Imprimimos la razón exacta del fallo en la consola
+                System.err.println(">>> ERROR DE AUTENTICACIÓN EN EL GATEWAY: " + e.getMessage());
+                e.printStackTrace();
+
                 exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
                 return exchange.getResponse().setComplete();
             }

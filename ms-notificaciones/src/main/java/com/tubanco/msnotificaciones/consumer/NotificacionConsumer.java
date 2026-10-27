@@ -1,47 +1,55 @@
 package com.tubanco.msnotificaciones.consumer;
 
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.tubanco.msnotificaciones.dto.response.TransaccionResponseDto;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.amqp.core.Message;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Component;
+
+import java.nio.charset.StandardCharsets;
 
 @Slf4j
 @Component
 @RequiredArgsConstructor
 public class NotificacionConsumer {
 
-    // Inyectamos el servicio oficial de Spring para el envio de correos
     private final JavaMailSender mailSender;
 
-    // Indicamos que este metodo vigila de manera permanente la cola de transacciones
     @RabbitListener(queues = "cola.transacciones")
-    public void enviarCorreoNotificacion(TransaccionResponseDto transaccionDto) {
-        log.info("📧 [EVENTO RECIBIDO EN NOTIFICACIONES] Procesando correo para la transacción ID: {}", transaccionDto.getId());
-
+    public void enviarCorreoNotificacion(Message mensajeRabbit) {
         try {
+            String jsonBody = new String(mensajeRabbit.getBody(), StandardCharsets.UTF_8);
+            log.info("🔍 [DEBUG RABBIT] JSON crudo recibido: {}", jsonBody);
+
+            com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+            // Registramos el módulo de fechas de Java 8 para soportar LocalDateTime
+            mapper.registerModule(new JavaTimeModule());
+
+            TransaccionResponseDto transaccionDto = mapper.readValue(jsonBody, TransaccionResponseDto.class);
+
+            log.info("📧 [EVENTO RECIBIDO] Transacción ID: {}, Tipo: {}, Monto: {}",
+                    transaccionDto.getId(), transaccionDto.getTipo(), transaccionDto.getMonto());
+
             String emailDestino = transaccionDto.getEmailCliente();
+            log.info("🔍 [DEBUG MAIL] Email extraído del DTO: '{}'", emailDestino);
+
             if (emailDestino == null || emailDestino.isBlank()) {
-                log.warn("⚠️ [EMAIL OMITIDO] La transacción ID: {} no posee email del cliente.", transaccionDto.getId());
+                log.warn("⚠️ [EMAIL OMITIDO] La transacción ID: {} NO posee email del cliente o llegó nulo.", transaccionDto.getId());
                 return;
             }
 
-            // Creamos un mensaje de correo plano
             SimpleMailMessage mensaje = new SimpleMailMessage();
-
-            // Destinatario: extraído dinámicamente del DTO
             mensaje.setTo(emailDestino);
-
-            // Asunto del correo dinámico usando el ID de la transacción
             mensaje.setSubject("TuBanco - Comprobante de Operación Exitosa #" + transaccionDto.getId());
 
             String nombreCliente = transaccionDto.getTitularOrigen() != null
                     ? transaccionDto.getTitularOrigen()
                     : (transaccionDto.getTitularDestino() != null ? transaccionDto.getTitularDestino() : "Cliente");
 
-            // Cuerpo del mensaje formateado con los datos reales del DTO
             mensaje.setText(String.format(
                     "¡Hola, %s!\n\n" +
                             "Te informamos que se ha procesado exitosamente una operación en tu cuenta.\n\n" +
@@ -58,16 +66,13 @@ public class NotificacionConsumer {
                     transaccionDto.getFechaTransaccion()
             ));
 
-            // Disparamos el envío real a través de SMTP (Gmail)
+            log.info("📤 [DEBUG SMTP] Intentando conectar con Gmail para enviar correo a {}...", emailDestino);
             mailSender.send(mensaje);
-
-            log.info("✅ [EMAIL ENVIADO CON ÉXITO] Correo entregado a {} para la transacción ID: {}", emailDestino, transaccionDto.getId());
+            log.info("✅ [EMAIL ENVIADO CON ÉXITO] Correo entregado a {}", emailDestino);
 
         } catch (Exception e) {
-            log.error("❌ [ERROR CRÍTICO AL ENVIAR MAIL] Ocurrió un fallo en el servidor SMTP: {}", e.getMessage());
-
-            // Lanzar la excepción aquí permite que si configuras la DLQ, el mensaje reintente o viaje a la cola muerta
-            throw new RuntimeException("Fallo al enviar correo electrónico", e);
+            log.error("❌ [ERROR CRÍTICO AL PROCESAR/ENVIAR MAIL]: ", e);
+            throw new RuntimeException("Fallo al procesar el mensaje de RabbitMQ", e);
         }
     }
 }

@@ -53,9 +53,10 @@ spring:
             - AuthFilter
 
 # Configuración de JWT
+# Configuración de JWT
 jwt:
-  secret: ${JWT_SECRET_KEY}
-  expiration: ${JWT_EXPIRATION_TIME:86400000}
+  secret: EstaEsUnaClaveSecretaSuperSeguraParaTodoElSistemaBanco123456789
+  expiration: 86400000
 
 eureka:
   client:
