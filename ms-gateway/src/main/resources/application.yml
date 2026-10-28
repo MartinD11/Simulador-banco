@@ -52,6 +52,11 @@ spring:
           filters:
             - AuthFilter
 
+        - id: ms-inversiones
+          uri: lb://MS-INVERSIONES
+          predicates:
+            - Path=/api/inversiones/**
+
 # Configuración de JWT
 # Configuración de JWT
 jwt:
