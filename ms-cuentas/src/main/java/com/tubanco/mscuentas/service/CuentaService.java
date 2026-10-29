@@ -12,4 +12,5 @@ public interface CuentaService {
     CuentaResponseDto obtenerCuenta(Long id);
     List<CuentaResponseDto> obtenerCuentasPorUsuario(Long id);
     void actualizarSaldo(Long id, BigDecimal monto);
+    void debitarFondos(Long id, BigDecimal monto);
 }

@@ -1,6 +1,7 @@
 package com.tubanco.mscuentas.controller;
 
 import com.tubanco.mscuentas.dto.request.CrearCuentaRequestDto;
+import com.tubanco.mscuentas.dto.request.DebitarFondosRequestDto;
 import com.tubanco.mscuentas.dto.response.CuentaResponseDto;
 import com.tubanco.mscuentas.service.CuentaService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -93,6 +94,16 @@ public class CuentaController {
 
         cuentaService.actualizarSaldo(id, monto);
         return ResponseEntity.ok().build();
+    }
+
+    @PutMapping("/{id}/debitar")
+    public ResponseEntity<Void> debitarFondos(
+            @PathVariable Long id,
+            @Valid @RequestBody DebitarFondosRequestDto request) {
+
+        cuentaService.debitarFondos(id, request.getMonto());
+
+        return ResponseEntity.noContent().build();
     }
 
 }

@@ -1,6 +1,8 @@
 package com.tubanco.mscuentas.service.impl;
 
+import com.tubanco.bancocommon.exceptions.CuentaInactivaException;
 import com.tubanco.bancocommon.exceptions.RecursoNoEncontradoException;
+import com.tubanco.bancocommon.exceptions.SaldoInsuficienteException;
 import com.tubanco.bancocommon.exceptions.TipoCuentaYaExisteException;
 import com.tubanco.mscuentas.client.UsuarioClient;
 import com.tubanco.mscuentas.context.ContextoUsuario;
@@ -16,6 +18,7 @@ import com.tubanco.mscuentas.repository.CuentaRepository;
 import com.tubanco.mscuentas.service.CuentaService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -178,5 +181,29 @@ public class CuentaServiceImpl implements CuentaService {
         if (usuarioActualId == null || !usuarioIdPropietario.equals(usuarioActualId)) {
             throw new RuntimeException("Acceso Denegado: No tenés permisos sobre esta cuenta.");
         }
+    }
+
+    @Override
+    @Transactional
+    public void debitarFondos(Long id, BigDecimal monto) {
+        Cuenta cuenta = cuentaRepository.findByIdForUpdate(id)
+                .orElseThrow(() -> new RecursoNoEncontradoException(
+                        "No se encontró la cuenta con id: " + id + ". No se puede debitar fondos de una cuenta que no existe."
+                ));
+
+        if(cuenta.getEstado() != Estado.ACTIVA) {
+            throw new CuentaInactivaException(
+                    "La cuenta no se encuentra activa"
+            );
+        }
+
+        if (cuenta.getSaldo().compareTo(monto) <=0) {
+            throw new SaldoInsuficienteException(
+                    "La cuenta no posee saldo suficiente"
+            );
+        }
+
+        cuenta.setSaldo(cuenta.getSaldo().subtract(monto));
+
     }
 }

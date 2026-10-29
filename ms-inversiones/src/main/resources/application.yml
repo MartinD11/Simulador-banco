@@ -5,7 +5,7 @@ spring:
   application:
     name: ms-inversiones
   datasource:
-    url: jdbc:postgresql://localhost:5433/banco_cuentas?options=-c%20TimeZone%3DUTC
+    url: jdbc:postgresql://localhost:5433/banco_inversiones?options=-c%20TimeZone%3DUTC
     username: postgres
     password: 12345
     driver-class-name: org.postgresql.Driver
