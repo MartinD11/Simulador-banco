@@ -1,6 +1,6 @@
 package com.tubanco.msinversiones.controller;
 
-import com.tubanco.msinversiones.dto.DolarResponseDto;
+import com.tubanco.msinversiones.dto.response.DolarResponseDto;
 import com.tubanco.msinversiones.enums.DolarTipo;
 import com.tubanco.msinversiones.service.DolarService;
 import lombok.RequiredArgsConstructor;

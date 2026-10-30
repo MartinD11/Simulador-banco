@@ -1,7 +1,7 @@
 package com.tubanco.msinversiones.mapper;
 
-import com.tubanco.msinversiones.dto.DolarApiResponseDto;
-import com.tubanco.msinversiones.dto.DolarResponseDto;
+import com.tubanco.msinversiones.dto.response.DolarApiResponseDto;
+import com.tubanco.msinversiones.dto.response.DolarResponseDto;
 import org.mapstruct.Mapper;
 
 @Mapper(componentModel = "spring")

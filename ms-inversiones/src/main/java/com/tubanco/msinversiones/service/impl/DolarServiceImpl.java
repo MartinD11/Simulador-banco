@@ -1,7 +1,7 @@
 package com.tubanco.msinversiones.service.impl;
 
-import com.tubanco.msinversiones.dto.DolarApiResponseDto;
-import com.tubanco.msinversiones.dto.DolarResponseDto;
+import com.tubanco.msinversiones.dto.response.DolarApiResponseDto;
+import com.tubanco.msinversiones.dto.response.DolarResponseDto;
 import com.tubanco.msinversiones.enums.DolarTipo;
 import com.tubanco.msinversiones.mapper.DolarMapper;
 import com.tubanco.msinversiones.service.DolarService;

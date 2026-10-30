@@ -1,4 +1,4 @@
-package com.tubanco.msinversiones.dto;
+package com.tubanco.msinversiones.dto.response;
 
 
 import lombok.AllArgsConstructor;

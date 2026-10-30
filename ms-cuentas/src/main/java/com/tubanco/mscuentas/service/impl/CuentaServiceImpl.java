@@ -197,7 +197,7 @@ public class CuentaServiceImpl implements CuentaService {
             );
         }
 
-        if (cuenta.getSaldo().compareTo(monto) <=0) {
+        if (cuenta.getSaldo().compareTo(monto) <0) {
             throw new SaldoInsuficienteException(
                     "La cuenta no posee saldo suficiente"
             );
