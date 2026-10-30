@@ -37,3 +37,5 @@ eureka:
 dolar:
   api:
     base-url: https://dolarapi.com/v1
+plazo-fijo:
+  tna: 0.35

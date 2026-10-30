@@ -1,5 +1,6 @@
 package com.tubanco.msinversiones.client;
 
+import com.tubanco.msinversiones.dto.request.AcreditarFondosRequestDto;
 import com.tubanco.msinversiones.dto.request.DebitarFondosRequestDto;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -13,4 +14,9 @@ public interface CuentaClient {
     void debitarFondos(
             @PathVariable("id") Long cuentaId,
             @RequestBody DebitarFondosRequestDto request);
+
+    @PutMapping("/api/cuentas/{id}/acreditar")
+    void acreditarFondos(
+            @PathVariable("id") Long cuentaId,
+            @RequestBody AcreditarFondosRequestDto request);
 }
