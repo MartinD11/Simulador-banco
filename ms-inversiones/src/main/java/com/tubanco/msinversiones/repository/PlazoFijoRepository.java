@@ -1,6 +1,5 @@
 package com.tubanco.msinversiones.repository;
 
-import com.tubanco.msinversiones.dto.response.PlazoFijoResponseDto;
 import com.tubanco.msinversiones.entity.PlazoFijo;
 import com.tubanco.msinversiones.enums.EstadoPlazoFijo;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -17,5 +16,5 @@ public interface PlazoFijoRepository extends JpaRepository<PlazoFijo, Long> {
             LocalDate fecha
     );
 
-    List<PlazoFijo> obtenerPorCuentaId(Long cuentaId);
+    List<PlazoFijo> findByCuentaId(Long cuentaId);
 }

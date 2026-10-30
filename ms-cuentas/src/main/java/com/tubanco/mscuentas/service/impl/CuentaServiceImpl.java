@@ -9,11 +9,13 @@ import com.tubanco.mscuentas.context.ContextoUsuario;
 import com.tubanco.mscuentas.dto.request.CrearCuentaRequestDto;
 import com.tubanco.mscuentas.dto.response.CuentaResponseDto;
 import com.tubanco.mscuentas.dto.response.UsuarioResponseDto;
+import com.tubanco.mscuentas.entity.AcreditacionPlazoFijo;
 import com.tubanco.mscuentas.entity.Cuenta;
 import com.tubanco.mscuentas.entity.Tarjeta;
 import com.tubanco.mscuentas.enums.Estado;
 import com.tubanco.mscuentas.enums.EstadoUsuario;
 import com.tubanco.mscuentas.mapper.CuentaMapper;
+import com.tubanco.mscuentas.repository.AcreditacionPlazoFijoRepository;
 import com.tubanco.mscuentas.repository.CuentaRepository;
 import com.tubanco.mscuentas.service.CuentaService;
 import lombok.RequiredArgsConstructor;
@@ -22,6 +24,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -32,6 +35,7 @@ public class CuentaServiceImpl implements CuentaService {
     private final CuentaMapper cuentaMapper;
     private final UsuarioClient usuarioClient;
     private final ContextoUsuario contextoUsuario;
+    private final AcreditacionPlazoFijoRepository acreditacionPlazoFijoRepository;
 
     @Override
     public CuentaResponseDto crearCuenta(CrearCuentaRequestDto requestDto) {
@@ -205,5 +209,40 @@ public class CuentaServiceImpl implements CuentaService {
 
         cuenta.setSaldo(cuenta.getSaldo().subtract(monto));
 
+    }
+
+    @Override
+    @Transactional
+    public void acreditarFondos(
+            Long cuentaId,
+            BigDecimal monto,
+            Long plazoFijoId) {
+
+        Cuenta cuenta = cuentaRepository.findByIdForUpdate(cuentaId)
+                .orElseThrow(() -> new RecursoNoEncontradoException(
+                        "No se encontró la cuenta con id: " + cuentaId
+                ));
+
+        if (acreditacionPlazoFijoRepository.existsByPlazoFijoId(plazoFijoId)) {
+            return;
+        }
+
+        if (cuenta.getEstado() != Estado.ACTIVA) {
+            throw new CuentaInactivaException(
+                    "No se pueden acreditar fondos en una cuenta inactiva"
+            );
+        }
+
+        cuenta.setSaldo(cuenta.getSaldo().add(monto));
+
+        AcreditacionPlazoFijo acreditacion = AcreditacionPlazoFijo.builder()
+                .plazoFijoId(plazoFijoId)
+                .cuentaId(cuentaId)
+                .monto(monto)
+                .fechaAcreditacion(LocalDateTime.now())
+                .build();
+
+        cuentaRepository.save(cuenta);
+        acreditacionPlazoFijoRepository.save(acreditacion);
     }
 }

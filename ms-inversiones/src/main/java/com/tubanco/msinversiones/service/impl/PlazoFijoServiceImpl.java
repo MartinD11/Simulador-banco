@@ -90,6 +90,7 @@ public class PlazoFijoServiceImpl implements PlazoFijoService {
     }
 
     @Override
+    @Transactional
     public void procesarVencimientos() {
         LocalDate fechaActual = LocalDate.now();
 
@@ -101,9 +102,10 @@ public class PlazoFijoServiceImpl implements PlazoFijoService {
 
         for (PlazoFijo plazoFijo : plazosVencidos) {
             AcreditarFondosRequestDto acreditacion =
-                    new AcreditarFondosRequestDto();
-
-            acreditacion.setMonto(plazoFijo.getMontoAlVencimiento());
+                    new AcreditarFondosRequestDto(
+                            plazoFijo.getMontoAlVencimiento(),
+                            plazoFijo.getId()
+                    );
 
             cuentaClient.acreditarFondos(
                     plazoFijo.getCuentaId(),
@@ -124,7 +126,7 @@ public class PlazoFijoServiceImpl implements PlazoFijoService {
 
     @Override
     public List<PlazoFijoResponseDto> obtenerPorCuentaId(Long cuentaId) {
-        return plazoFijoRepository.obtenerPorCuentaId(cuentaId)
+        return plazoFijoRepository.findByCuentaId(cuentaId)
                 .stream()
                 .map(plazoFijoMapper::toResponse)
                 .toList();

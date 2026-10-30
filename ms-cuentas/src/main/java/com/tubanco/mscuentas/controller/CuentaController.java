@@ -1,6 +1,7 @@
 package com.tubanco.mscuentas.controller;
 
 import com.tubanco.mscuentas.dto.request.CrearCuentaRequestDto;
+import com.tubanco.mscuentas.dto.request.AcreditarFondosRequestDto;
 import com.tubanco.mscuentas.dto.request.DebitarFondosRequestDto;
 import com.tubanco.mscuentas.dto.response.CuentaResponseDto;
 import com.tubanco.mscuentas.service.CuentaService;
@@ -103,6 +104,15 @@ public class CuentaController {
 
         cuentaService.debitarFondos(id, request.getMonto());
 
+        return ResponseEntity.noContent().build();
+    }
+
+    @PutMapping("/{id}/acreditar")
+    public ResponseEntity<Void> acreditarFondos(
+            @PathVariable Long id,
+            @Valid @RequestBody AcreditarFondosRequestDto request) {
+
+        cuentaService.acreditarFondos(id, request.getMonto(), request.getPlazoFijoId());
         return ResponseEntity.noContent().build();
     }
 
