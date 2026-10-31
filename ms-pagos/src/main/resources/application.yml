@@ -1,0 +1,20 @@
+server:
+  port: 8086
+
+spring:
+  application:
+    name: ms-pagos
+
+eureka:
+  client:
+    register-with-eureka: true
+    fetch-registry: true
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
+  instance:
+    prefer-ip-address: true
+
+mercadopago:
+  access-token: ${MERCADOPAGO_ACCESS_TOKEN:}
+  public-key: ${MERCADOPAGO_PUBLIC_KEY:}
+  webhook-url: ${MERCADOPAGO_WEBHOOK_URL:}

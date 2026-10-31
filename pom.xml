@@ -57,6 +57,6 @@
 		<module>ms-gateway</module>
 		<module>ms-notificaciones</module>
         <module>ms-inversiones</module>
+		<module>ms-pagos</module>
 	</modules>
 </project>
-
