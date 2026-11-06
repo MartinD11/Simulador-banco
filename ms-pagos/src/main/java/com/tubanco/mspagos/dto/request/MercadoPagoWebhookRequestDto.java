@@ -14,7 +14,7 @@ public class MercadoPagoWebhookRequestDto {
     private String applicationId;
     private String dateCreated;
     private String id;
-    private String liveMode;
+    private Boolean liveMode;
     private String type;
     private WebhookDataDto data;
 
